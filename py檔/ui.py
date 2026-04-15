@@ -1216,7 +1216,7 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self._here = os.path.dirname(os.path.abspath(__file__))
-        self.path_templates = os.path.dirname(self._here)
+        self.path_templates = get_base_path()
         self.image_file_path = []
         self.image_file_name_noext = []
         self.custom_names: list[str] = []

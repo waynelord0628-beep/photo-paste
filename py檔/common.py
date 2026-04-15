@@ -28,10 +28,16 @@ from PIL import Image
 
 
 def get_base_path():
-    """取得執行檔或 .py 所在資料夾路徑（相容 PyInstaller .exe）"""
+    """
+    取得資源（模板檔等）所在資料夾路徑，相容 PyInstaller .exe。
+    - 打包後（frozen）：PyInstaller 將 --add-data 資源解壓到 sys._MEIPASS，
+      模板就在該目錄根層，故回傳 sys._MEIPASS。
+    - 開發時直接跑 .py：模板放在 py檔 的上一層資料夾，
+      故回傳 __file__ 所在目錄的上一層。
+    """
     if getattr(sys, "frozen", False):
-        return os.path.dirname(sys.executable)
-    return os.path.dirname(os.path.abspath(__file__))
+        return sys._MEIPASS  # type: ignore[attr-defined]
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def get_unique_filename(folder, base_name, ext):
