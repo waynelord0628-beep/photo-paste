@@ -305,12 +305,24 @@ def fill_name_cell(cell, number: int, desc_text: str, num_col_cm: float = 2.2):
 
     # tblGrid（兩欄）
     tblGrid = etree.SubElement(tbl_xml, _qn("w:tblGrid"))
-    # num_col twips
+    # 左格寬度（twips）
     num_twips = int(num_col_cm / 2.54 * 1440)
+    # 右格寬度 = 外層 cell 實際寬度 - 左格寬度
+    tcPr_outer = tc.find(_qn("w:tcPr"))
+    desc_twips = 5000  # fallback
+    if tcPr_outer is not None:
+        tcW_outer = tcPr_outer.find(_qn("w:tcW"))
+        if tcW_outer is not None:
+            try:
+                outer_w = int(tcW_outer.get(_qn("w:w"), "0"))
+                if outer_w > num_twips:
+                    desc_twips = outer_w - num_twips
+            except ValueError:
+                pass
     gridCol1 = etree.SubElement(tblGrid, _qn("w:gridCol"))
     gridCol1.set(_qn("w:w"), str(num_twips))
     gridCol2 = etree.SubElement(tblGrid, _qn("w:gridCol"))
-    gridCol2.set(_qn("w:w"), "5000")  # 右欄佔位，Word 會自動撐滿
+    gridCol2.set(_qn("w:w"), str(desc_twips))
 
     # ── 單一列 ──
     tr = etree.SubElement(tbl_xml, _qn("w:tr"))
@@ -353,7 +365,7 @@ def fill_name_cell(cell, number: int, desc_text: str, num_col_cm: float = 2.2):
         return tc_el
 
     _make_tc(num_twips, f"編號 {number}", align="center")
-    _make_tc(5000, desc_text, align="left")
+    _make_tc(desc_twips, desc_text, align="left")
 
     # cell 最後需要一個段落（Word 規範）
     closing_p = etree.SubElement(tc, _qn("w:p"))
