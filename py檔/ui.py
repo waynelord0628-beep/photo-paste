@@ -359,7 +359,10 @@ def _run_2col_portrait_filename(
             p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
             cell_name = tbl.cell(1, i)
             fill_name_cell(
-                cell_name, group_start + i + 1, "說明：", outer_width_cm=COL_W
+                cell_name,
+                group_start + i + 1,
+                f"說明：{img_name}",
+                outer_width_cm=COL_W,
             )
         if group_start + GROUP_SIZE < len(image_file_path):
             document.add_section(WD_SECTION.NEW_PAGE)
