@@ -470,7 +470,7 @@ def _build_layout_preview(mode: str, image_paths: list, names: list):
         COL_W = (PW - 80 - 4) // 3
         PIC_W = COL_W - 8  # 圖片寬（欄寬扣 padding）
         PIC_MAX_H = PH - 80 - 60  # 圖片最大高（扣頁邊+名稱列）
-        NAME_H = 40
+        NAME_H = 60
     elif "左右" in mode:
         PW, PH = 638, 900  # 直向
         COLS = 2
@@ -478,7 +478,7 @@ def _build_layout_preview(mode: str, image_paths: list, names: list):
         COL_W = (PW - 80 - 2) // 2
         PIC_W = COL_W - 8
         PIC_MAX_H = PH - 80 - 60
-        NAME_H = 40
+        NAME_H = 60
     else:  # 上下
         PW, PH = 638, 900
         COLS = 1
@@ -486,7 +486,7 @@ def _build_layout_preview(mode: str, image_paths: list, names: list):
         COL_W = PW - 80
         PIC_W = COL_W - 8
         PIC_MAX_H = (PH - 80 - 80) // 2  # 兩張各佔一半
-        NAME_H = 40
+        NAME_H = 60
 
     BG = (255, 255, 255)
     BORDER = (180, 190, 210)
@@ -518,8 +518,6 @@ def _build_layout_preview(mode: str, image_paths: list, names: list):
             except Exception:
                 pass
         return ImageFont.load_default()
-
-    font_name = _try_font(14)
 
     pages = []
     for g_start in range(0, len(image_paths), GROUP):
@@ -563,12 +561,21 @@ def _build_layout_preview(mode: str, image_paths: list, names: list):
                     outline=BORDER,
                     width=1,
                 )
+                # 兩行文字：編號 N（上）、說明：xxx（下）
+                line1 = f"編號 {g_start + ci + 1}"
+                line2 = f"說明：{iname}" if "含檔名" in mode else "說明："
+                font_small = _try_font(12)
                 draw.text(
-                    (cx + col_step // 2, name_y + NAME_H // 2),
-                    iname,
+                    (cx + 6, name_y + 6),
+                    line1,
                     fill=TEXT_COLOR,
-                    font=font_name,
-                    anchor="mm",
+                    font=font_small,
+                )
+                draw.text(
+                    (cx + 6, name_y + NAME_H // 2 + 2),
+                    line2,
+                    fill=TEXT_COLOR,
+                    font=font_small,
                 )
         else:
             # ── 上下兩張 ──
@@ -596,12 +603,21 @@ def _build_layout_preview(mode: str, image_paths: list, names: list):
                     outline=BORDER,
                     width=1,
                 )
+                # 兩行文字：編號 N（上）、說明：xxx（下）
+                line1 = f"編號 {g_start + ri + 1}"
+                line2 = f"說明：{iname}" if "含檔名" in mode else "說明："
+                font_small = _try_font(12)
                 draw.text(
-                    (MARGIN + col_w // 2, name_y + NAME_H // 2),
-                    iname,
+                    (MARGIN + 6, name_y + 6),
+                    line1,
                     fill=TEXT_COLOR,
-                    font=font_name,
-                    anchor="mm",
+                    font=font_small,
+                )
+                draw.text(
+                    (MARGIN + 6, name_y + NAME_H // 2 + 2),
+                    line2,
+                    fill=TEXT_COLOR,
+                    font=font_small,
                 )
 
         pages.append(page)
@@ -1634,30 +1650,30 @@ class MainWindow(QWidget):
 
         # 預覽排版按鈕
         self.btn_preview_layout = QPushButton("🔍  預覽排版")
-        self.btn_preview_layout.setFixedHeight(36)
+        self.btn_preview_layout.setFixedHeight(48)
         self.btn_preview_layout.setStyleSheet("""
             QPushButton {
-                background-color: #3a4a6e;
-                border: 1px solid #4a5a8e;
-                border-radius: 6px;
-                color: #a8c0f0;
-                font-size: 13px;
+                background-color: #0891b2;
+                border: 2px solid #0e7490;
+                border-radius: 8px;
+                color: #ffffff;
+                font-size: 15px;
                 font-weight: bold;
-                letter-spacing: 1px;
-                padding: 6px;
+                letter-spacing: 2px;
+                padding: 10px;
             }
             QPushButton:hover {
-                background-color: #4a5a8e;
-                border-color: #6878b8;
-                color: #d0e0ff;
+                background-color: #0e7490;
+                border: 2px solid #164e63;
             }
             QPushButton:pressed {
-                background-color: #5a6a9e;
+                background-color: #164e63;
+                border: 2px solid #164e63;
             }
             QPushButton:disabled {
-                background-color: #2e3048;
-                color: #5a6080;
-                border-color: #3a4060;
+                background-color: #5a6a9a;
+                border: 2px solid #7a8ab8;
+                color: #c8d4f0;
             }
         """)
         self.btn_preview_layout.clicked.connect(self._on_preview_layout)
