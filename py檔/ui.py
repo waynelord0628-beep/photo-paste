@@ -414,6 +414,245 @@ MODE_MAP = {
 }
 
 
+# ── 排版預覽工具 ─────────────────────────────────────────────────
+
+
+def _build_layout_preview(mode: str, image_paths: list, names: list):
+    """
+    用 Pillow 依排版模式組合模擬頁面縮圖，回傳 list[PIL.Image.Image]。
+    每個元素代表一頁（RGB）。
+    """
+    from PIL import Image, ImageDraw, ImageFont
+    import math
+
+    # ── 頁面尺寸（像素，縮小版）──
+    # 直向 A4 比例 210:297，橫向 297:210
+    is_landscape = "橫式" in mode
+    if is_landscape:
+        PW, PH = 900, 638  # 橫向頁面
+        COLS = 3
+        GROUP = 3
+        # 每欄可用圖片寬（PW 扣左右邊距 40*2，再扣欄間格線 2*2，除以欄數）
+        COL_W = (PW - 80 - 4) // 3
+        PIC_W = COL_W - 8  # 圖片寬（欄寬扣 padding）
+        PIC_MAX_H = PH - 80 - 60  # 圖片最大高（扣頁邊+名稱列）
+        NAME_H = 40
+    elif "左右" in mode:
+        PW, PH = 638, 900  # 直向
+        COLS = 2
+        GROUP = 2
+        COL_W = (PW - 80 - 2) // 2
+        PIC_W = COL_W - 8
+        PIC_MAX_H = PH - 80 - 60
+        NAME_H = 40
+    else:  # 上下
+        PW, PH = 638, 900
+        COLS = 1
+        GROUP = 2
+        COL_W = PW - 80
+        PIC_W = COL_W - 8
+        PIC_MAX_H = (PH - 80 - 80) // 2  # 兩張各佔一半
+        NAME_H = 40
+
+    BG = (255, 255, 255)
+    BORDER = (180, 190, 210)
+    TEXT_COLOR = (50, 55, 75)
+    MARGIN = 40
+
+    def _load_thumb(path, max_w, max_h):
+        """載入圖片並縮放至 max_w x max_h 內，保持比例，回傳 RGBA。"""
+        try:
+            img = Image.open(path).convert("RGB")
+            img.thumbnail((max_w, max_h), Image.LANCZOS)
+            return img
+        except Exception:
+            # 載入失敗：回傳灰色佔位圖
+            ph = Image.new("RGB", (max_w, max_h), (200, 200, 200))
+            return ph
+
+    def _try_font(size):
+        """嘗試載入系統字型，失敗時用預設字型。"""
+        for name in [
+            "msjh.ttc",
+            "mingliu.ttc",
+            "kaiu.ttf",
+            "msyh.ttc",
+            "arial.ttf",
+        ]:
+            try:
+                return ImageFont.truetype(name, size)
+            except Exception:
+                pass
+        return ImageFont.load_default()
+
+    font_name = _try_font(14)
+
+    pages = []
+    for g_start in range(0, len(image_paths), GROUP):
+        g_imgs = image_paths[g_start : g_start + GROUP]
+        g_names = names[g_start : g_start + GROUP]
+
+        page = Image.new("RGB", (PW, PH), BG)
+        draw = ImageDraw.Draw(page)
+
+        # 外框
+        draw.rectangle(
+            [MARGIN - 1, MARGIN - 1, PW - MARGIN, PH - MARGIN], outline=BORDER, width=1
+        )
+
+        if is_landscape or "左右" in mode:
+            # ── 多欄並排 ──
+            actual_cols = len(g_imgs)
+            col_step = (PW - 2 * MARGIN) // COLS
+            table_top = MARGIN + 10
+            table_h = PH - 2 * MARGIN - 20
+            pic_area_h = table_h - NAME_H
+
+            for ci, (ipath, iname) in enumerate(zip(g_imgs, g_names)):
+                cx = MARGIN + ci * col_step
+                # 格子邊框
+                draw.rectangle(
+                    [cx, table_top, cx + col_step - 2, table_top + table_h],
+                    outline=BORDER,
+                    width=1,
+                )
+                # 圖片
+                thumb = _load_thumb(ipath, col_step - 10, pic_area_h - 10)
+                tw, th = thumb.size
+                paste_x = cx + (col_step - tw) // 2
+                paste_y = table_top + (pic_area_h - th) // 2
+                page.paste(thumb, (paste_x, paste_y))
+                # 名稱格
+                name_y = table_top + pic_area_h
+                draw.rectangle(
+                    [cx, name_y, cx + col_step - 2, name_y + NAME_H],
+                    outline=BORDER,
+                    width=1,
+                )
+                draw.text(
+                    (cx + col_step // 2, name_y + NAME_H // 2),
+                    iname,
+                    fill=TEXT_COLOR,
+                    font=font_name,
+                    anchor="mm",
+                )
+        else:
+            # ── 上下兩張 ──
+            row_h = (PH - 2 * MARGIN - 20) // 2
+            pic_area_h = row_h - NAME_H
+            col_w = PW - 2 * MARGIN
+
+            for ri, (ipath, iname) in enumerate(zip(g_imgs, g_names)):
+                ry = MARGIN + 10 + ri * row_h
+                draw.rectangle(
+                    [MARGIN, ry, PW - MARGIN - 1, ry + row_h - 2],
+                    outline=BORDER,
+                    width=1,
+                )
+                # 圖片
+                thumb = _load_thumb(ipath, col_w - 10, pic_area_h - 10)
+                tw, th = thumb.size
+                paste_x = MARGIN + (col_w - tw) // 2
+                paste_y = ry + (pic_area_h - th) // 2
+                page.paste(thumb, (paste_x, paste_y))
+                # 名稱
+                name_y = ry + pic_area_h
+                draw.rectangle(
+                    [MARGIN, name_y, PW - MARGIN - 1, name_y + NAME_H],
+                    outline=BORDER,
+                    width=1,
+                )
+                draw.text(
+                    (MARGIN + col_w // 2, name_y + NAME_H // 2),
+                    iname,
+                    fill=TEXT_COLOR,
+                    font=font_name,
+                    anchor="mm",
+                )
+
+        pages.append(page)
+
+    return pages
+
+
+class LayoutPreviewWindow(QWidget):
+    """顯示排版預覽縮圖的獨立視窗（可滾動，顯示多頁）。"""
+
+    def __init__(self, pages, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("排版預覽")
+        self.setMinimumSize(520, 600)
+        self.setStyleSheet("background-color: #2b2d3a;")
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(6)
+
+        # 提示列
+        hint = QLabel(f"共 {len(pages)} 頁（模擬排版，僅供參考）")
+        hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        hint.setStyleSheet("color: #a8b4d0; font-size: 11px; background: transparent;")
+        layout.addWidget(hint)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("""
+            QScrollArea { border: none; background: #2b2d3a; }
+            QScrollBar:vertical {
+                background: #3a3d52; width: 8px; border-radius: 4px;
+            }
+            QScrollBar::handle:vertical {
+                background: #6878a8; border-radius: 4px; min-height: 20px;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+            }
+        """)
+
+        container = QWidget()
+        container.setStyleSheet("background: #2b2d3a;")
+        vbox = QVBoxLayout(container)
+        vbox.setContentsMargins(12, 12, 12, 12)
+        vbox.setSpacing(16)
+
+        for i, pil_img in enumerate(pages):
+            # 轉成 QPixmap
+            pil_img_rgb = pil_img.convert("RGB")
+            data = pil_img_rgb.tobytes("raw", "RGB")
+            from PyQt6.QtGui import QImage, QPixmap
+
+            qimg = QImage(
+                data,
+                pil_img_rgb.width,
+                pil_img_rgb.height,
+                pil_img_rgb.width * 3,
+                QImage.Format.Format_RGB888,
+            )
+            pixmap = QPixmap.fromImage(qimg)
+
+            # 頁碼標籤
+            page_lbl = QLabel(f"第 {i + 1} 頁")
+            page_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            page_lbl.setStyleSheet(
+                "color: #7888b8; font-size: 11px; background: transparent;"
+            )
+            vbox.addWidget(page_lbl)
+
+            # 圖片標籤（陰影框）
+            img_lbl = QLabel()
+            img_lbl.setPixmap(pixmap)
+            img_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            img_lbl.setStyleSheet(
+                "background: #ffffff; border: 1px solid #4a5080;"
+                " border-radius: 3px; padding: 0px;"
+            )
+            vbox.addWidget(img_lbl)
+
+        vbox.addStretch()
+        scroll.setWidget(container)
+        layout.addWidget(scroll, 1)
+
+
 # ── 淺色科技感全域樣式 ────────────────────────────────────────────
 
 STYLESHEET = """
@@ -1359,6 +1598,37 @@ class MainWindow(QWidget):
         mode_outer.addWidget(mode_grid_widget)
         left.addWidget(mode_frame)
 
+        # 預覽排版按鈕
+        self.btn_preview_layout = QPushButton("🔍  預覽排版")
+        self.btn_preview_layout.setFixedHeight(36)
+        self.btn_preview_layout.setStyleSheet("""
+            QPushButton {
+                background-color: #3a4a6e;
+                border: 1px solid #4a5a8e;
+                border-radius: 6px;
+                color: #a8c0f0;
+                font-size: 13px;
+                font-weight: bold;
+                letter-spacing: 1px;
+                padding: 6px;
+            }
+            QPushButton:hover {
+                background-color: #4a5a8e;
+                border-color: #6878b8;
+                color: #d0e0ff;
+            }
+            QPushButton:pressed {
+                background-color: #5a6a9e;
+            }
+            QPushButton:disabled {
+                background-color: #2e3048;
+                color: #5a6080;
+                border-color: #3a4060;
+            }
+        """)
+        self.btn_preview_layout.clicked.connect(self._on_preview_layout)
+        left.addWidget(self.btn_preview_layout)
+
         # 執行按鈕
         self.btn_run = QPushButton("▶  產生 Word 文件")
         self.btn_run.setObjectName("runBtn")
@@ -1542,6 +1812,23 @@ class MainWindow(QWidget):
         root.addLayout(body_layout)
 
     # ── 事件處理 ─────────────────────────────────────────────────
+
+    def _on_preview_layout(self):
+        """依目前排版模式和已選圖片產生預覽視窗。"""
+        if not self.image_file_path:
+            QMessageBox.warning(self, "未選擇圖片", "請先選擇照片再預覽。")
+            return
+        try:
+            pages = _build_layout_preview(
+                self._selected_mode,
+                self.image_file_path,
+                self.custom_names if self.custom_names else self.image_file_name_noext,
+            )
+        except Exception as e:
+            QMessageBox.critical(self, "預覽失敗", str(e))
+            return
+        self._preview_win = LayoutPreviewWindow(pages, parent=None)
+        self._preview_win.show()
 
     def _on_mode_selected(self, idx):
         self._selected_mode = list(MODE_MAP.keys())[idx]
