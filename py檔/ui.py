@@ -78,6 +78,7 @@ def _run_3col_landscape_filename(
         delete_first_paragraph_if_empty,
         delete_trailing_empty_paragraphs,
         save_document,
+        fill_name_cell,
     )
 
     document = open_template(os.path.join(path_templates, "word橫向模板別動.docx"))
@@ -102,10 +103,7 @@ def _run_3col_landscape_filename(
             p_pic.add_run().add_picture(open_image_as_stream(img_path), width=Cm(8))
             p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
             cell_name = tbl.cell(1, i)
-            cell_name.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-            p_name = cell_name.paragraphs[0]
-            set_run_font(p_name.add_run(img_name))
-            p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            fill_name_cell(cell_name, group_start + i + 1, f"說明：{img_name}")
         if group_start + GROUP_SIZE < len(image_file_path):
             document.add_section(WD_SECTION.NEW_PAGE)
 
@@ -134,6 +132,7 @@ def _run_3col_landscape_number(
         delete_first_paragraph_if_empty,
         delete_trailing_empty_paragraphs,
         save_document,
+        fill_name_cell,
     )
 
     document = open_template(os.path.join(path_templates, "word橫向模板別動.docx"))
@@ -157,10 +156,7 @@ def _run_3col_landscape_number(
             p_pic.add_run().add_picture(open_image_as_stream(img_path), width=Cm(8))
             p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
             cell_name = tbl.cell(1, i)
-            cell_name.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-            p_name = cell_name.paragraphs[0]
-            set_run_font(p_name.add_run(f"編號 {group_start + i + 1}"))
-            p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            fill_name_cell(cell_name, group_start + i + 1, "說明：")
         if group_start + GROUP_SIZE < len(image_file_path):
             document.add_section(WD_SECTION.NEW_PAGE)
 
@@ -188,6 +184,7 @@ def _run_2row_portrait_filename(
         delete_first_paragraph_if_empty,
         delete_trailing_empty_paragraphs,
         save_document,
+        fill_name_cell,
     )
 
     document = open_template(os.path.join(path_templates, "word模板別動.docx"))
@@ -211,10 +208,7 @@ def _run_2row_portrait_filename(
         p_pic.add_run().add_picture(open_image_as_stream(img_path), width=PIC_WIDTH)
         p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
         cell_name = tbl.cell(i * 2 + 1, 0)
-        cell_name.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-        p_name = cell_name.paragraphs[0]
-        set_run_font(p_name.add_run(img_name))
-        p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        fill_name_cell(cell_name, i + 1, f"說明：{img_name}")
         row_name = tbl.rows[i * 2 + 1]
         row_name.height = Pt(28.35)
         row_name.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
@@ -249,6 +243,7 @@ def _run_2row_portrait_number(
         delete_first_paragraph_if_empty,
         delete_trailing_empty_paragraphs,
         save_document,
+        fill_name_cell,
     )
 
     document = open_template(os.path.join(path_templates, "word模板別動.docx"))
@@ -269,10 +264,7 @@ def _run_2row_portrait_number(
         p_pic.add_run().add_picture(open_image_as_stream(img_path), width=PIC_WIDTH)
         p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
         cell_name = tbl.cell(i * 2 + 1, 0)
-        cell_name.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-        p_name = cell_name.paragraphs[0]
-        set_run_font(p_name.add_run(f"編號{i + 1}"))
-        p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        fill_name_cell(cell_name, i + 1, "說明：")
         row_name = tbl.rows[i * 2 + 1]
         row_name.height = Cm(1)
         row_name.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
@@ -308,6 +300,7 @@ def _run_2col_portrait_filename(
         delete_first_paragraph_if_empty,
         delete_trailing_empty_paragraphs,
         save_document,
+        fill_name_cell,
     )
 
     document = open_template(os.path.join(path_templates, "word模板別動.docx"))
@@ -334,10 +327,7 @@ def _run_2col_portrait_filename(
             p_pic.add_run().add_picture(open_image_as_stream(img_path), width=Cm(8))
             p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
             cell_name = tbl.cell(1, i)
-            cell_name.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-            p_name = cell_name.paragraphs[0]
-            set_run_font(p_name.add_run(img_name))
-            p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            fill_name_cell(cell_name, group_start + i + 1, f"說明：{img_name}")
         if group_start + GROUP_SIZE < len(image_file_path):
             document.add_section(WD_SECTION.NEW_PAGE)
 
@@ -366,6 +356,7 @@ def _run_2col_portrait_number(
         delete_first_paragraph_if_empty,
         delete_trailing_empty_paragraphs,
         save_document,
+        fill_name_cell,
     )
 
     document = open_template(os.path.join(path_templates, "word模板別動.docx"))
@@ -391,10 +382,7 @@ def _run_2col_portrait_number(
             p_pic.add_run().add_picture(open_image_as_stream(img_path), width=Cm(8))
             p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
             cell_name = tbl.cell(1, i)
-            cell_name.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-            p_name = cell_name.paragraphs[0]
-            set_run_font(p_name.add_run(f"編號{group_start + i + 1}"))
-            p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            fill_name_cell(cell_name, group_start + i + 1, "說明：")
         if group_start + GROUP_SIZE < len(image_file_path):
             document.add_section(WD_SECTION.NEW_PAGE)
 

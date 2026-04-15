@@ -233,6 +233,127 @@ def delete_trailing_empty_paragraphs(doc):
         body.remove(last)
 
 
+# ── 儲存格寬度工具 ────────────────────────────────────────────────
+
+
+def set_cell_width(cell, width_cm):
+    """
+    強制設定 python-docx 儲存格的寬度（公分）。
+    python-docx 的 cell.width 不可靠，需直接操作 XML tcPr/tcW。
+    """
+    from lxml import etree
+    from docx.oxml.ns import qn as _qn
+    from docx.shared import Cm
+
+    width_emu = int(Cm(width_cm))  # Cm 物件即 EMU
+    # Word 表格寬度單位是 twips（1 inch = 1440 twips，1 cm ≈ 567 twips）
+    twips = int(width_emu / 914400 * 1440)
+
+    tc = cell._tc
+    tcPr = tc.get_or_add_tcPr()
+    # 移除舊的 tcW（若存在）
+    for old in tcPr.findall(_qn("w:tcW")):
+        tcPr.remove(old)
+    tcW = etree.SubElement(tcPr, _qn("w:tcW"))
+    tcW.set(_qn("w:w"), str(twips))
+    tcW.set(_qn("w:type"), "dxa")
+
+
+def fill_name_cell(cell, number: int, desc_text: str, num_col_cm: float = 1.6):
+    """
+    將名稱格（單一 cell）拆成左右兩個巢狀欄位：
+      左格（固定 num_col_cm cm）：「編號 N」，置中
+      右格（其餘寬度）          ：desc_text，靠左
+
+    做法：在 cell 內插入一個 1 列 2 欄的巢狀表格，
+    外層 cell 本身清空，讓巢狀表格填滿。
+    """
+    from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml.ns import qn as _qn
+    from lxml import etree
+
+    # 清除 cell 原有段落內容
+    tc = cell._tc
+    for p in tc.findall(_qn("w:p")):
+        tc.remove(p)
+
+    # 取得外層 cell 的表格物件，以便用 add_table
+    # python-docx 不支援直接在 cell 內 add_table，改用 XML 直接建
+    # ── 建立巢狀表格 XML ──
+    tbl_xml = etree.SubElement(tc, _qn("w:tbl"))
+
+    # tblPr
+    tblPr = etree.SubElement(tbl_xml, _qn("w:tblPr"))
+    tblStyle = etree.SubElement(tblPr, _qn("w:tblStyle"))
+    tblStyle.set(_qn("w:val"), "TableGrid")
+    tblW = etree.SubElement(tblPr, _qn("w:tblW"))
+    tblW.set(_qn("w:w"), "0")
+    tblW.set(_qn("w:type"), "auto")
+    tblLayout = etree.SubElement(tblPr, _qn("w:tblLayout"))
+    tblLayout.set(_qn("w:type"), "fixed")
+    # 移除巢狀表格外框（讓它看起來和外層融合）
+    tblBorders = etree.SubElement(tblPr, _qn("w:tblBorders"))
+    for side in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        b = etree.SubElement(tblBorders, _qn(f"w:{side}"))
+        b.set(_qn("w:val"), "none")
+
+    # tblGrid（兩欄）
+    tblGrid = etree.SubElement(tbl_xml, _qn("w:tblGrid"))
+    # num_col twips
+    num_twips = int(num_col_cm / 2.54 * 1440)
+    gridCol1 = etree.SubElement(tblGrid, _qn("w:gridCol"))
+    gridCol1.set(_qn("w:w"), str(num_twips))
+    gridCol2 = etree.SubElement(tblGrid, _qn("w:gridCol"))
+    gridCol2.set(_qn("w:w"), "5000")  # 右欄佔位，Word 會自動撐滿
+
+    # ── 單一列 ──
+    tr = etree.SubElement(tbl_xml, _qn("w:tr"))
+    trPr = etree.SubElement(tr, _qn("w:trPr"))
+    trHeight = etree.SubElement(trPr, _qn("w:trHeight"))
+    trHeight.set(_qn("w:val"), "0")
+    trHeight.set(_qn("w:hRule"), "auto")
+
+    def _make_tc(width_twips, text, align="center"):
+        tc_el = etree.SubElement(tr, _qn("w:tc"))
+        tcPr_el = etree.SubElement(tc_el, _qn("w:tcPr"))
+        tcW_el = etree.SubElement(tcPr_el, _qn("w:tcW"))
+        tcW_el.set(_qn("w:w"), str(width_twips))
+        tcW_el.set(_qn("w:type"), "dxa")
+        # 垂直置中
+        vAlign = etree.SubElement(tcPr_el, _qn("w:vAlign"))
+        vAlign.set(_qn("w:val"), "center")
+        # 段落
+        p_el = etree.SubElement(tc_el, _qn("w:p"))
+        pPr_el = etree.SubElement(p_el, _qn("w:pPr"))
+        jc = etree.SubElement(pPr_el, _qn("w:jc"))
+        jc.set(_qn("w:val"), align)
+        # 段落間距
+        spacing = etree.SubElement(pPr_el, _qn("w:spacing"))
+        spacing.set(_qn("w:before"), "0")
+        spacing.set(_qn("w:after"), "0")
+        r_el = etree.SubElement(p_el, _qn("w:r"))
+        rPr_el = etree.SubElement(r_el, _qn("w:rPr"))
+        # 字型 14pt 標楷體
+        rFonts = etree.SubElement(rPr_el, _qn("w:rFonts"))
+        rFonts.set(_qn("w:ascii"), "Times New Roman")
+        rFonts.set(_qn("w:eastAsia"), "標楷體")
+        sz = etree.SubElement(rPr_el, _qn("w:sz"))
+        sz.set(_qn("w:val"), "28")  # 14pt = 28 half-points
+        szCs = etree.SubElement(rPr_el, _qn("w:szCs"))
+        szCs.set(_qn("w:val"), "28")
+        t_el = etree.SubElement(r_el, _qn("w:t"))
+        t_el.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+        t_el.text = text
+        return tc_el
+
+    _make_tc(num_twips, f"編號 {number}", align="center")
+    _make_tc(5000, desc_text, align="left")
+
+    # cell 最後需要一個段落（Word 規範）
+    closing_p = etree.SubElement(tc, _qn("w:p"))
+
+
 # ── 儲存文件 ────────────────────────────────────────────────────
 
 
