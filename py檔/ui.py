@@ -92,14 +92,14 @@ def _run_3col_landscape_filename(
         tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
         tbl.style = "Table Grid"
         tbl.rows[0].height = Cm(15)
-        tbl.rows[0].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+        tbl.rows[0].height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
         tbl.rows[1].height = Cm(1.6)
         tbl.rows[1].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
         for i, (img_path, img_name) in enumerate(zip(group_imgs, group_names)):
             cell_pic = tbl.cell(0, i)
             cell_pic.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
             p_pic = cell_pic.paragraphs[0]
-            p_pic.add_run().add_picture(open_image_as_stream(img_path), height=Cm(14))
+            p_pic.add_run().add_picture(open_image_as_stream(img_path), width=Cm(8))
             p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
             cell_name = tbl.cell(1, i)
             cell_name.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
@@ -147,14 +147,14 @@ def _run_3col_landscape_number(
         tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
         tbl.style = "Table Grid"
         tbl.rows[0].height = Cm(15)
-        tbl.rows[0].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+        tbl.rows[0].height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
         tbl.rows[1].height = Cm(1.6)
         tbl.rows[1].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
         for i, img_path in enumerate(group_imgs):
             cell_pic = tbl.cell(0, i)
             cell_pic.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
             p_pic = cell_pic.paragraphs[0]
-            p_pic.add_run().add_picture(open_image_as_stream(img_path), height=Cm(14))
+            p_pic.add_run().add_picture(open_image_as_stream(img_path), width=Cm(8))
             p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
             cell_name = tbl.cell(1, i)
             cell_name.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
