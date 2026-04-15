@@ -96,18 +96,12 @@ def load_images(path_captures):
 
 def open_image_as_stream(img_path):
     """
-    將圖片轉成 python-docx 可插入的 bytes stream（PNG 格式）。
-    - JPEG/PNG：直接讀取原始檔案（保持品質）
-    - HEIC、WEBP、TIFF 等其他格式：用 Pillow 轉成 PNG bytes
+    將圖片轉成 python-docx 可插入的 PNG bytes stream。
+    所有格式（包含 JPEG/PNG）一律用 Pillow 讀取後輸出成 PNG bytes，
+    避免 python-docx 直接開啟含中文路徑時發生 UnrecognizedImageError。
     """
-    ext = os.path.splitext(img_path)[1].lower()
-    if ext in (".jpg", ".jpeg", ".png"):
-        # 原生支援，直接回傳檔案路徑即可（讓 add_picture 直接讀檔）
-        return img_path
-    # 其他格式：用 Pillow 讀取後輸出成 PNG bytes
     with Image.open(img_path) as img:
-        # RGBA 轉 RGB（Word 不支援帶透明通道的 PNG 在某些情況下）
-        if img.mode in ("RGBA", "P"):
+        if img.mode in ("RGBA", "P", "LA"):
             img = img.convert("RGBA")
         else:
             img = img.convert("RGB")
