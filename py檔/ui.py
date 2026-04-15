@@ -79,6 +79,8 @@ def _run_3col_landscape_filename(
         delete_trailing_empty_paragraphs,
         save_document,
         fill_name_cell,
+        set_cell_width,
+        set_table_fixed_width,
     )
 
     document = open_template(os.path.join(path_templates, "word橫向模板別動.docx"))
@@ -96,6 +98,12 @@ def _run_3col_landscape_filename(
         tbl.rows[0].height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
         tbl.rows[1].height = Cm(1.6)
         tbl.rows[1].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+        # 明確設定表格總寬與每個 cell 欄寬，防止 Word 自動縮放
+        COL_W = 8.47
+        set_table_fixed_width(tbl, COL_W * 3)
+        for row in tbl.rows:
+            for cell in row.cells:
+                set_cell_width(cell, COL_W)
         for i, (img_path, img_name) in enumerate(zip(group_imgs, group_names)):
             cell_pic = tbl.cell(0, i)
             cell_pic.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
@@ -104,7 +112,10 @@ def _run_3col_landscape_filename(
             p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
             cell_name = tbl.cell(1, i)
             fill_name_cell(
-                cell_name, group_start + i + 1, f"說明：{img_name}", outer_width_cm=8.47
+                cell_name,
+                group_start + i + 1,
+                f"說明：{img_name}",
+                outer_width_cm=COL_W,
             )
         if group_start + GROUP_SIZE < len(image_file_path):
             document.add_section(WD_SECTION.NEW_PAGE)
@@ -135,6 +146,8 @@ def _run_3col_landscape_number(
         delete_trailing_empty_paragraphs,
         save_document,
         fill_name_cell,
+        set_cell_width,
+        set_table_fixed_width,
     )
 
     document = open_template(os.path.join(path_templates, "word橫向模板別動.docx"))
@@ -151,6 +164,12 @@ def _run_3col_landscape_number(
         tbl.rows[0].height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
         tbl.rows[1].height = Cm(1.6)
         tbl.rows[1].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+        # 明確設定表格總寬與每個 cell 欄寬，防止 Word 自動縮放
+        COL_W = 8.47
+        set_table_fixed_width(tbl, COL_W * 3)
+        for row in tbl.rows:
+            for cell in row.cells:
+                set_cell_width(cell, COL_W)
         for i, img_path in enumerate(group_imgs):
             cell_pic = tbl.cell(0, i)
             cell_pic.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
@@ -159,7 +178,7 @@ def _run_3col_landscape_number(
             p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
             cell_name = tbl.cell(1, i)
             fill_name_cell(
-                cell_name, group_start + i + 1, "說明：", outer_width_cm=8.47
+                cell_name, group_start + i + 1, "說明：", outer_width_cm=COL_W
             )
         if group_start + GROUP_SIZE < len(image_file_path):
             document.add_section(WD_SECTION.NEW_PAGE)
@@ -305,6 +324,8 @@ def _run_2col_portrait_filename(
         delete_trailing_empty_paragraphs,
         save_document,
         fill_name_cell,
+        set_cell_width,
+        set_table_fixed_width,
     )
 
     document = open_template(os.path.join(path_templates, "word模板別動.docx"))
@@ -324,6 +345,12 @@ def _run_2col_portrait_filename(
         tbl.rows[0].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
         tbl.rows[1].height = Cm(1)
         tbl.rows[1].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+        # 明確設定表格總寬與每個 cell 欄寬，防止 Word 自動縮放
+        COL_W = 9.525
+        set_table_fixed_width(tbl, COL_W * 2)
+        for row in tbl.rows:
+            for cell in row.cells:
+                set_cell_width(cell, COL_W)
         for i, (img_path, img_name) in enumerate(zip(group_imgs, group_names)):
             cell_pic = tbl.cell(0, i)
             cell_pic.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
@@ -332,7 +359,7 @@ def _run_2col_portrait_filename(
             p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
             cell_name = tbl.cell(1, i)
             fill_name_cell(
-                cell_name, group_start + i + 1, "說明：", outer_width_cm=9.525
+                cell_name, group_start + i + 1, "說明：", outer_width_cm=COL_W
             )
         if group_start + GROUP_SIZE < len(image_file_path):
             document.add_section(WD_SECTION.NEW_PAGE)
@@ -363,6 +390,8 @@ def _run_2col_portrait_number(
         delete_trailing_empty_paragraphs,
         save_document,
         fill_name_cell,
+        set_cell_width,
+        set_table_fixed_width,
     )
 
     document = open_template(os.path.join(path_templates, "word模板別動.docx"))
@@ -381,6 +410,12 @@ def _run_2col_portrait_number(
         tbl.rows[0].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
         tbl.rows[1].height = Cm(1)
         tbl.rows[1].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+        # 明確設定表格總寬與每個 cell 欄寬，防止 Word 自動縮放
+        COL_W = 9.525
+        set_table_fixed_width(tbl, COL_W * 2)
+        for row in tbl.rows:
+            for cell in row.cells:
+                set_cell_width(cell, COL_W)
         for i, img_path in enumerate(group_imgs):
             cell_pic = tbl.cell(0, i)
             cell_pic.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
@@ -389,7 +424,7 @@ def _run_2col_portrait_number(
             p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
             cell_name = tbl.cell(1, i)
             fill_name_cell(
-                cell_name, group_start + i + 1, "說明：", outer_width_cm=9.525
+                cell_name, group_start + i + 1, "說明：", outer_width_cm=COL_W
             )
         if group_start + GROUP_SIZE < len(image_file_path):
             document.add_section(WD_SECTION.NEW_PAGE)

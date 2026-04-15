@@ -374,6 +374,36 @@ def fill_name_cell(
     closing_p = etree.SubElement(tc, _qn("w:p"))
 
 
+def set_table_fixed_width(tbl, total_width_cm):
+    """
+    強制設定表格的總寬度為固定（fixed）模式。
+    避免 Word 在多欄表格中自動縮放欄寬。
+    """
+    from lxml import etree
+    from docx.oxml.ns import qn as _qn
+    from docx.shared import Cm
+
+    total_emu = int(Cm(total_width_cm))
+    twips = int(total_emu / 914400 * 1440)
+
+    tblPr = tbl._tbl.find(_qn("w:tblPr"))
+    if tblPr is None:
+        tblPr = etree.SubElement(tbl._tbl, _qn("w:tblPr"))
+
+    # 設定 tblW = fixed
+    for old in tblPr.findall(_qn("w:tblW")):
+        tblPr.remove(old)
+    tblW = etree.SubElement(tblPr, _qn("w:tblW"))
+    tblW.set(_qn("w:w"), str(twips))
+    tblW.set(_qn("w:type"), "dxa")
+
+    # 設定 tblLayout = fixed
+    for old in tblPr.findall(_qn("w:tblLayout")):
+        tblPr.remove(old)
+    tblLayout = etree.SubElement(tblPr, _qn("w:tblLayout"))
+    tblLayout.set(_qn("w:type"), "fixed")
+
+
 # ── 儲存文件 ────────────────────────────────────────────────────
 
 
