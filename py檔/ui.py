@@ -97,7 +97,7 @@ def _run_3col_landscape_filename(
         tbl.rows[0].height = Cm(15)
         tbl.rows[0].height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
         tbl.rows[1].height = Cm(1.2)
-        tbl.rows[1].height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
+        tbl.rows[1].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
         # 明確設定表格總寬與每個 cell 欄寬，防止 Word 自動縮放
         COL_W = 8.47
         set_table_fixed_width(tbl, COL_W * 3)
@@ -163,7 +163,7 @@ def _run_3col_landscape_number(
         tbl.rows[0].height = Cm(15)
         tbl.rows[0].height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
         tbl.rows[1].height = Cm(1.2)
-        tbl.rows[1].height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
+        tbl.rows[1].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
         # 明確設定表格總寬與每個 cell 欄寬，防止 Word 自動縮放
         COL_W = 8.47
         set_table_fixed_width(tbl, COL_W * 3)
@@ -234,7 +234,7 @@ def _run_2row_portrait_filename(
         fill_name_cell(cell_name, i + 1, f"說明：{img_name}", outer_width_cm=19.05)
         row_name = tbl.rows[i * 2 + 1]
         row_name.height = Cm(1.2)
-        row_name.height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
+        row_name.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
 
     # 圖片列設為「最小高度 10.5cm」，效果同 Word 表格內容→列→最小高度
     for i in range(len(image_file_path)):
@@ -290,7 +290,7 @@ def _run_2row_portrait_number(
         fill_name_cell(cell_name, i + 1, "說明：", outer_width_cm=19.05)
         row_name = tbl.rows[i * 2 + 1]
         row_name.height = Cm(1.2)
-        row_name.height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
+        row_name.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
 
     # 圖片列設為「最小高度 10.5cm」
     for i in range(len(image_file_path)):
@@ -344,7 +344,7 @@ def _run_2col_portrait_filename(
         tbl.rows[0].height = Cm(22.5)
         tbl.rows[0].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
         tbl.rows[1].height = Cm(1.2)
-        tbl.rows[1].height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
+        tbl.rows[1].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
         # 明確設定表格總寬與每個 cell 欄寬，防止 Word 自動縮放
         COL_W = 9.525
         set_table_fixed_width(tbl, COL_W * 2)
@@ -409,7 +409,7 @@ def _run_2col_portrait_number(
         tbl.rows[0].height = Cm(22.5)
         tbl.rows[0].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
         tbl.rows[1].height = Cm(1.2)
-        tbl.rows[1].height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
+        tbl.rows[1].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
         # 明確設定表格總寬與每個 cell 欄寬，防止 Word 自動縮放
         COL_W = 9.525
         set_table_fixed_width(tbl, COL_W * 2)

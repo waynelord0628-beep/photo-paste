@@ -259,6 +259,52 @@ def set_cell_width(cell, width_cm):
     tcW.set(_qn("w:type"), "dxa")
 
 
+def truncate_text_to_width(
+    text: str, max_width_cm: float, font_size_pt: float = 14
+) -> str:
+    """
+    估算文字在指定欄寬內最多能放幾個字，超出則截斷並加「…」。
+
+    估算規則（近似值，不依賴 GDI）：
+    - 中文／全形字元：字寬 ≈ font_size_pt × (2.54/72) cm（正方形）
+    - 英文／半形字元：字寬 ≈ font_size_pt × (2.54/72) × 0.6 cm
+    - 預留左右各 0.1cm 內邊距
+
+    這是純軟體估算，結果保守（寧可少放一個字也不超出）。
+    """
+    # 每 pt 對應 cm
+    pt_cm = 2.54 / 72
+    full_w = font_size_pt * pt_cm  # 全形字寬 cm
+    half_w = full_w * 0.6  # 半形字寬 cm
+    ellipsis = "…"
+    ellipsis_w = full_w  # 刪節號算全形
+
+    usable = max_width_cm - 0.2  # 扣掉左右內邊距
+
+    def _measure(s: str) -> float:
+        w = 0.0
+        for ch in s:
+            if ord(ch) > 0x2E7F:  # CJK 及其他全形範圍
+                w += full_w
+            else:
+                w += half_w
+        return w
+
+    if _measure(text) <= usable:
+        return text
+
+    # 二分搜尋找最大可放字數
+    lo, hi = 0, len(text)
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if _measure(text[:mid]) + ellipsis_w <= usable:
+            lo = mid
+        else:
+            hi = mid - 1
+
+    return text[:lo] + ellipsis
+
+
 def fill_name_cell(
     cell,
     number: int,
@@ -269,7 +315,7 @@ def fill_name_cell(
     """
     將名稱格（單一 cell）拆成左右兩個巢狀欄位：
       左格（固定 num_col_cm cm）：「編號 N」，置中
-      右格（其餘寬度）          ：desc_text，靠左
+      右格（其餘寬度）          ：desc_text，靠左（超出欄寬自動截斷加 …）
 
     outer_width_cm：外層 cell 的實際欄寬（cm），用來計算右格寬度。
     做法：在 cell 內插入一個 1 列 2 欄的巢狀表格，
@@ -368,7 +414,10 @@ def fill_name_cell(
         return tc_el
 
     _make_tc(num_twips, f"編號 {number}", align="center", fit_text=True)
-    _make_tc(desc_twips, desc_text, align="left", fit_text=True)
+    # 右格：先截斷文字，超出用刪節號，不再用 fitText
+    desc_width_cm = desc_twips / 1440 * 2.54
+    truncated = truncate_text_to_width(desc_text, desc_width_cm, font_size_pt=14)
+    _make_tc(desc_twips, truncated, align="left", fit_text=False)
 
     # cell 最後需要一個段落（Word 規範）
     closing_p = etree.SubElement(tc, _qn("w:p"))
