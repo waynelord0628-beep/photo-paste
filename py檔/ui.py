@@ -2024,15 +2024,9 @@ class MainWindow(QWidget):
         if idx_from > idx_to:
             idx_from, idx_to = idx_to, idx_from
 
-        count = idx_to - idx_from + 1
-        width = max(2, len(str(count)))  # 至少 2 位補齊
-
         cards = self.card_container._cards
-        for seq, card_idx in enumerate(range(idx_from, idx_to + 1), start=1):
-            if count == 1:
-                name = new_name
-            else:
-                name = f"{new_name}{str(seq).zfill(width)}"
+        for card_idx in range(idx_from, idx_to + 1):
+            name = new_name
             # 更新 custom_names
             self.custom_names[card_idx] = name
             # 更新卡片顯示
