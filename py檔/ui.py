@@ -196,26 +196,34 @@ def _run_2row_portrait_filename(
     section.top_margin = section.bottom_margin = Cm(1.27)
     setup_header(document, section, title_text)
 
-    PIC_HEIGHT_EMU = 3880000
+    PIC_WIDTH = Cm(16)
+    PIC_ROW_HEIGHT = Cm(12)
+    NAME_ROW_HEIGHT = Pt(28.35)
+
     tbl = document.add_table(rows=len(image_file_path) * 2, cols=1)
     tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
     tbl.style = "Table Grid"
     for i, (img_path, img_name) in enumerate(
         zip(image_file_path, image_file_name_noext)
     ):
-        p_pic = tbl.cell(i * 2, 0).paragraphs[0]
-        p_pic.add_run().add_picture(
-            open_image_as_stream(img_path), height=PIC_HEIGHT_EMU
-        )
+        # 圖片列：固定高度，圖片用寬度限制（不會超出儲存格）
+        row_pic = tbl.rows[i * 2]
+        row_pic.height = PIC_ROW_HEIGHT
+        row_pic.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+        cell_pic = tbl.cell(i * 2, 0)
+        cell_pic.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+        p_pic = cell_pic.paragraphs[0]
+        p_pic.add_run().add_picture(open_image_as_stream(img_path), width=PIC_WIDTH)
         p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        # 名稱列
         cell_name = tbl.cell(i * 2 + 1, 0)
         cell_name.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
         p_name = cell_name.paragraphs[0]
         set_run_font(p_name.add_run(img_name))
         p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        row = tbl.rows[i * 2 + 1]
-        row.height = Pt(28.35)
-        row.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+        row_name = tbl.rows[i * 2 + 1]
+        row_name.height = NAME_ROW_HEIGHT
+        row_name.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
 
     delete_first_paragraph_if_empty(document)
     delete_trailing_empty_paragraphs(document)
@@ -249,24 +257,32 @@ def _run_2row_portrait_number(
     section.top_margin = section.bottom_margin = Cm(1.27)
     setup_header(document, section, title_text)
 
-    PIC_HEIGHT_EMU = 3880000
+    PIC_WIDTH = Cm(16)
+    PIC_ROW_HEIGHT = Cm(12)
+    NAME_ROW_HEIGHT = Cm(1)
+
     tbl = document.add_table(rows=len(image_file_path) * 2, cols=1)
     tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
     tbl.style = "Table Grid"
     for i, img_path in enumerate(image_file_path):
-        p_pic = tbl.cell(i * 2, 0).paragraphs[0]
-        p_pic.add_run().add_picture(
-            open_image_as_stream(img_path), height=PIC_HEIGHT_EMU
-        )
+        # 圖片列：固定高度，圖片用寬度限制
+        row_pic = tbl.rows[i * 2]
+        row_pic.height = PIC_ROW_HEIGHT
+        row_pic.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+        cell_pic = tbl.cell(i * 2, 0)
+        cell_pic.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+        p_pic = cell_pic.paragraphs[0]
+        p_pic.add_run().add_picture(open_image_as_stream(img_path), width=PIC_WIDTH)
         p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        # 名稱列
         cell_name = tbl.cell(i * 2 + 1, 0)
         cell_name.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
         p_name = cell_name.paragraphs[0]
         set_run_font(p_name.add_run(f"編號{i + 1}"))
         p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        row = tbl.rows[i * 2 + 1]
-        row.height = Cm(1)
-        row.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+        row_name = tbl.rows[i * 2 + 1]
+        row_name.height = NAME_ROW_HEIGHT
+        row_name.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
 
     delete_first_paragraph_if_empty(document)
     delete_trailing_empty_paragraphs(document)

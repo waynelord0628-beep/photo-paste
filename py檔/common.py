@@ -172,31 +172,59 @@ def delete_first_paragraph_if_empty(doc):
 
 def delete_trailing_empty_paragraphs(doc):
     """
-    刪除文件結尾所有空白段落。
+    刪除文件結尾所有多餘的空白段落，防止 Word 產生額外空白頁。
 
-    python-docx 的 add_section() 會在 body 尾端插入一個帶有
-    <w:sectPr type="nextPage"> 的空段落，Word 開啟時會把這個
-    段落視為「下一頁的起點」，造成多出一頁空白。
-    將這些段落移除後，分節符會自動併入文件最終的 <w:sectPr>，
-    空白頁就消失了。
+    策略：從 body 最後一個子元素往前掃：
+    - 若是空的 <w:p>（無文字、無圖片），且其 pPr 內沒有帶 sectPr
+      （即不是分節段落），直接刪除。
+    - 若是非空段落或表格，停止。
+    - 若 <w:p> 內帶有 <w:pPr><w:sectPr>（分節符），
+      把 sectPr 移到 body 直屬的最終 <w:sectPr>，再刪掉該段落，
+      這樣 Word 就不會把它視為「下一頁起點」。
     """
     from docx.oxml.ns import qn as _qn
+    from lxml import etree
 
     body = doc.element.body
-    # 從後往前掃，遇到非空段落就停止
+    W_P = _qn("w:p")
+    W_SECT_PR = _qn("w:sectPr")
+    W_PPR = _qn("w:pPr")
+
     while True:
-        paras = doc.paragraphs
-        if not paras:
+        children = list(body)
+        if not children:
             break
-        last_p = paras[-1]
-        # 若段落含有文字或圖片等內容，停止刪除
-        if last_p.text.strip():
+        last = children[-1]
+
+        # 最終的 <w:sectPr> 直接掛在 body 下，不動它
+        if last.tag == W_SECT_PR:
             break
-        # 段落沒有文字，但若其 <w:pPr><w:sectPr> 是文件最終 sectPr，不能刪
-        # （最終 sectPr 直接掛在 <w:body> 下，不在段落內）
-        elem = last_p._element
-        # 只刪除「段落本身帶有 sectPr（即分節段落）」或「完全空白的段落」
-        elem.getparent().remove(elem)
+
+        # 只處理 <w:p>
+        if last.tag != W_P:
+            break
+
+        # 若段落有實際文字或圖片內容，停止
+        text = "".join(t.text or "" for t in last.iter(_qn("w:t"))).strip()
+        has_drawing = last.find(".//" + _qn("w:drawing")) is not None
+        if text or has_drawing:
+            break
+
+        # 若段落內的 pPr 帶有 sectPr（分節符），搬移到 body 的最終 sectPr
+        pPr = last.find(W_PPR)
+        if pPr is not None:
+            inline_sect = pPr.find(W_SECT_PR)
+            if inline_sect is not None:
+                # 取得或建立 body 最終 sectPr
+                body_sect = body.find(W_SECT_PR)
+                if body_sect is None:
+                    body_sect = etree.SubElement(body, W_SECT_PR)
+                # 把分節資訊的子元素搬過去（避免覆蓋已有設定）
+                for child in list(inline_sect):
+                    body_sect.append(child)
+                pPr.remove(inline_sect)
+
+        body.remove(last)
 
 
 # ── 儲存文件 ────────────────────────────────────────────────────
