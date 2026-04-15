@@ -1653,27 +1653,27 @@ class MainWindow(QWidget):
         self.btn_preview_layout.setFixedHeight(48)
         self.btn_preview_layout.setStyleSheet("""
             QPushButton {
-                background-color: #0891b2;
-                border: 2px solid #0e7490;
+                background-color: #e0f2fe;
+                border: 2px solid #7dd3fc;
                 border-radius: 8px;
-                color: #ffffff;
+                color: #0369a1;
                 font-size: 15px;
                 font-weight: bold;
                 letter-spacing: 2px;
                 padding: 10px;
             }
             QPushButton:hover {
-                background-color: #0e7490;
-                border: 2px solid #164e63;
+                background-color: #bae6fd;
+                border: 2px solid #38bdf8;
             }
             QPushButton:pressed {
-                background-color: #164e63;
-                border: 2px solid #164e63;
+                background-color: #7dd3fc;
+                border: 2px solid #0284c7;
             }
             QPushButton:disabled {
-                background-color: #5a6a9a;
-                border: 2px solid #7a8ab8;
-                color: #c8d4f0;
+                background-color: #f0f4f8;
+                border: 2px solid #c8d4e0;
+                color: #94a3b8;
             }
         """)
         self.btn_preview_layout.clicked.connect(self._on_preview_layout)
