@@ -196,9 +196,8 @@ def _run_2row_portrait_filename(
     section.top_margin = section.bottom_margin = Cm(1.27)
     setup_header(document, section, title_text)
 
-    PIC_WIDTH = Cm(16)
-    PIC_ROW_HEIGHT = Cm(12)
-    NAME_ROW_HEIGHT = Pt(28.35)
+    # 用寬度限制圖片（避免橫向圖超出頁面），列高由圖片自然撐開
+    PIC_WIDTH = Cm(15.5)
 
     tbl = document.add_table(rows=len(image_file_path) * 2, cols=1)
     tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -206,24 +205,25 @@ def _run_2row_portrait_filename(
     for i, (img_path, img_name) in enumerate(
         zip(image_file_path, image_file_name_noext)
     ):
-        # 圖片列：固定高度，圖片用寬度限制（不會超出儲存格）
-        row_pic = tbl.rows[i * 2]
-        row_pic.height = PIC_ROW_HEIGHT
-        row_pic.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
         cell_pic = tbl.cell(i * 2, 0)
         cell_pic.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
         p_pic = cell_pic.paragraphs[0]
         p_pic.add_run().add_picture(open_image_as_stream(img_path), width=PIC_WIDTH)
         p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        # 名稱列
         cell_name = tbl.cell(i * 2 + 1, 0)
         cell_name.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
         p_name = cell_name.paragraphs[0]
         set_run_font(p_name.add_run(img_name))
         p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
         row_name = tbl.rows[i * 2 + 1]
-        row_name.height = NAME_ROW_HEIGHT
+        row_name.height = Pt(28.35)
         row_name.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+
+    # 圖片列設為「最小高度 10.5cm」，效果同 Word 表格內容→列→最小高度
+    for i in range(len(image_file_path)):
+        row_pic = tbl.rows[i * 2]
+        row_pic.height = Cm(10.5)
+        row_pic.height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
 
     delete_first_paragraph_if_empty(document)
     delete_trailing_empty_paragraphs(document)
@@ -257,32 +257,31 @@ def _run_2row_portrait_number(
     section.top_margin = section.bottom_margin = Cm(1.27)
     setup_header(document, section, title_text)
 
-    PIC_WIDTH = Cm(16)
-    PIC_ROW_HEIGHT = Cm(12)
-    NAME_ROW_HEIGHT = Cm(1)
+    PIC_WIDTH = Cm(15.5)
 
     tbl = document.add_table(rows=len(image_file_path) * 2, cols=1)
     tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
     tbl.style = "Table Grid"
     for i, img_path in enumerate(image_file_path):
-        # 圖片列：固定高度，圖片用寬度限制
-        row_pic = tbl.rows[i * 2]
-        row_pic.height = PIC_ROW_HEIGHT
-        row_pic.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
         cell_pic = tbl.cell(i * 2, 0)
         cell_pic.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
         p_pic = cell_pic.paragraphs[0]
         p_pic.add_run().add_picture(open_image_as_stream(img_path), width=PIC_WIDTH)
         p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        # 名稱列
         cell_name = tbl.cell(i * 2 + 1, 0)
         cell_name.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
         p_name = cell_name.paragraphs[0]
         set_run_font(p_name.add_run(f"編號{i + 1}"))
         p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
         row_name = tbl.rows[i * 2 + 1]
-        row_name.height = NAME_ROW_HEIGHT
+        row_name.height = Cm(1)
         row_name.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+
+    # 圖片列設為「最小高度 10.5cm」
+    for i in range(len(image_file_path)):
+        row_pic = tbl.rows[i * 2]
+        row_pic.height = Cm(10.5)
+        row_pic.height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
 
     delete_first_paragraph_if_empty(document)
     delete_trailing_empty_paragraphs(document)
@@ -406,11 +405,11 @@ def _run_2col_portrait_number(
 
 # 模式名稱 → 對應函式
 MODE_MAP = {
-    "1頁兩張左右（含檔名）": _run_2col_portrait_filename,
     "1頁兩張上下（含檔名）": _run_2row_portrait_filename,
+    "1頁兩張左右（含檔名）": _run_2col_portrait_filename,
     "1頁三張橫式（含檔名）": _run_3col_landscape_filename,
-    "1頁兩張左右（純編號）": _run_2col_portrait_number,
     "1頁兩張上下（純編號）": _run_2row_portrait_number,
+    "1頁兩張左右（純編號）": _run_2col_portrait_number,
     "1頁三張橫式（純編號）": _run_3col_landscape_number,
 }
 
@@ -1160,11 +1159,11 @@ class CardContainer(QWidget):
 
 # 模式按鈕顯示文字（順序對應 MODE_MAP）
 MODE_LABELS = [
-    "⊠  兩張左右\n含檔名",
     "⊟  兩張上下\n含檔名",
+    "⊠  兩張左右\n含檔名",
     "⊞  三張橫式\n含檔名",
-    "⊠  兩張左右\n純編號",
     "⊟  兩張上下\n純編號",
+    "⊠  兩張左右\n純編號",
     "⊞  三張橫式\n純編號",
 ]
 
@@ -1406,7 +1405,7 @@ class MainWindow(QWidget):
         body_layout.addWidget(left_widget)
 
         # ── 右側預覽面板（預設隱藏，選圖後展開）──
-        self.preview_frame = TechFrame("圖片預覽(點兩下可編輯檔名)", theme="blue")
+        self.preview_frame = TechFrame("圖片預覽（點兩下可編輯檔名）", theme="blue")
         self.preview_frame.setFixedWidth(320)
         self.preview_frame.setVisible(False)
 
