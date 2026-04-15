@@ -1008,8 +1008,31 @@ class TechFrame(QWidget):
 # ── 可拖曳排序的圖片卡片系統 ─────────────────────────────────────
 
 from PyQt6.QtCore import pyqtSignal as _Signal, QMimeData, QByteArray, QPoint
-from PyQt6.QtGui import QDrag, QCursor
+from PyQt6.QtGui import QDrag, QCursor, QImage
 from PyQt6.QtWidgets import QScrollArea, QScrollBar
+
+
+def _load_card_pixmap(path: str, max_w: int, max_h: int) -> "QPixmap":
+    """
+    用 Pillow 讀圖再轉 QPixmap，避免 Qt 直接讀含中文路徑失敗。
+    失敗時回傳灰色佔位圖。
+    """
+    try:
+        from PIL import Image as _PILImage
+
+        img = _PILImage.open(path).convert("RGBA")
+        img.thumbnail((max_w, max_h), _PILImage.LANCZOS)
+        data = img.tobytes("raw", "RGBA")
+        qimg = QImage(data, img.width, img.height, QImage.Format.Format_RGBA8888)
+        px = QPixmap.fromImage(qimg)
+        if not px.isNull():
+            return px
+    except Exception:
+        pass
+    # 佔位灰圖
+    px = QPixmap(max_w, max_h)
+    px.fill(QColor("#c0c8e0"))
+    return px
 
 
 class PhotoCard(QWidget):
@@ -1048,17 +1071,7 @@ class PhotoCard(QWidget):
         self.img_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.img_label.setFixedHeight(200)
         self.img_label.setStyleSheet("background: #d8dff0; border-radius: 4px;")
-        px = QPixmap(path)
-        if not px.isNull():
-            px = px.scaled(
-                268,
-                196,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation,
-            )
-        else:
-            px = QPixmap(268, 196)
-            px.fill(QColor("#c0c8e0"))
+        px = _load_card_pixmap(path, 268, 196)
         self.img_label.setPixmap(px)
         img_stack.addWidget(self.img_label)
 
