@@ -259,7 +259,7 @@ def set_cell_width(cell, width_cm):
     tcW.set(_qn("w:type"), "dxa")
 
 
-def fill_name_cell(cell, number: int, desc_text: str, num_col_cm: float = 1.6):
+def fill_name_cell(cell, number: int, desc_text: str, num_col_cm: float = 2.2):
     """
     將名稱格（單一 cell）拆成左右兩個巢狀欄位：
       左格（固定 num_col_cm cm）：「編號 N」，置中
@@ -292,11 +292,16 @@ def fill_name_cell(cell, number: int, desc_text: str, num_col_cm: float = 1.6):
     tblW.set(_qn("w:type"), "auto")
     tblLayout = etree.SubElement(tblPr, _qn("w:tblLayout"))
     tblLayout.set(_qn("w:type"), "fixed")
-    # 移除巢狀表格外框（讓它看起來和外層融合）
+    # 移除巢狀表格外框，但保留 insideV（左右格之間的中間直格線）
     tblBorders = etree.SubElement(tblPr, _qn("w:tblBorders"))
-    for side in ("top", "left", "bottom", "right", "insideH", "insideV"):
+    for side in ("top", "left", "bottom", "right", "insideH"):
         b = etree.SubElement(tblBorders, _qn(f"w:{side}"))
         b.set(_qn("w:val"), "none")
+    insideV = etree.SubElement(tblBorders, _qn("w:insideV"))
+    insideV.set(_qn("w:val"), "single")
+    insideV.set(_qn("w:sz"), "4")
+    insideV.set(_qn("w:space"), "0")
+    insideV.set(_qn("w:color"), "000000")
 
     # tblGrid（兩欄）
     tblGrid = etree.SubElement(tbl_xml, _qn("w:tblGrid"))
