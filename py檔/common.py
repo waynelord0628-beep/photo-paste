@@ -329,7 +329,7 @@ def fill_name_cell(
     trHeight.set(_qn("w:val"), "0")
     trHeight.set(_qn("w:hRule"), "auto")
 
-    def _make_tc(width_twips, text, align="center"):
+    def _make_tc(width_twips, text, align="center", fit_text=False):
         tc_el = etree.SubElement(tr, _qn("w:tc"))
         tcPr_el = etree.SubElement(tc_el, _qn("w:tcPr"))
         tcW_el = etree.SubElement(tcPr_el, _qn("w:tcW"))
@@ -357,13 +357,18 @@ def fill_name_cell(
         sz.set(_qn("w:val"), "28")  # 14pt = 28 half-points
         szCs = etree.SubElement(rPr_el, _qn("w:szCs"))
         szCs.set(_qn("w:val"), "28")
+        # 文字自適應：超出欄寬時自動縮小字型
+        if fit_text:
+            fitText = etree.SubElement(rPr_el, _qn("w:fitText"))
+            fitText.set(_qn("w:val"), str(width_twips))
+            fitText.set(_qn("w:id"), "1")
         t_el = etree.SubElement(r_el, _qn("w:t"))
         t_el.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
         t_el.text = text
         return tc_el
 
-    _make_tc(num_twips, f"編號 {number}", align="center")
-    _make_tc(desc_twips, desc_text, align="left")
+    _make_tc(num_twips, f"編號 {number}", align="center", fit_text=True)
+    _make_tc(desc_twips, desc_text, align="left", fit_text=True)
 
     # cell 最後需要一個段落（Word 規範）
     closing_p = etree.SubElement(tc, _qn("w:p"))
