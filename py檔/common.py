@@ -265,26 +265,24 @@ def truncate_text_to_width(
     """
     估算文字在指定欄寬內最多能放幾個字，超出則截斷並加「…」。
 
-    估算規則（近似值，不依賴 GDI）：
+    估算規則（保守近似值，不依賴 GDI）：
     - 中文／全形字元：字寬 ≈ font_size_pt × (2.54/72) cm（正方形）
-    - 英文／半形字元：字寬 ≈ font_size_pt × (2.54/72) × 0.6 cm
-    - 預留左右各 0.1cm 內邊距
+    - 英文／半形字元：字寬 ≈ font_size_pt × (2.54/72) × 0.55 cm
+    - 預留 0.5cm 安全邊距（cell padding + 格線寬度 + 字型微小超出）
 
-    這是純軟體估算，結果保守（寧可少放一個字也不超出）。
+    係數保守，寧可少放一個字也不超出換行。
     """
-    # 每 pt 對應 cm
     pt_cm = 2.54 / 72
-    full_w = font_size_pt * pt_cm  # 全形字寬 cm
-    half_w = full_w * 0.6  # 半形字寬 cm
-    ellipsis = "…"
+    full_w = font_size_pt * pt_cm  # 全形字寬 cm (~0.495)
+    half_w = full_w * 0.55  # 半形字寬 cm (~0.272)
     ellipsis_w = full_w  # 刪節號算全形
 
-    usable = max_width_cm - 0.2  # 扣掉左右內邊距
+    usable = max_width_cm - 0.5  # 扣掉安全邊距
 
     def _measure(s: str) -> float:
         w = 0.0
         for ch in s:
-            if ord(ch) > 0x2E7F:  # CJK 及其他全形範圍
+            if ord(ch) > 0x2E7F:
                 w += full_w
             else:
                 w += half_w
@@ -302,7 +300,7 @@ def truncate_text_to_width(
         else:
             hi = mid - 1
 
-    return text[:lo] + ellipsis
+    return text[:lo] + "…"
 
 
 def fill_name_cell(
@@ -311,15 +309,16 @@ def fill_name_cell(
     desc_text: str,
     outer_width_cm: float = 9.0,
     num_col_cm: float = 2.2,
+    row_height_cm: float = 1.2,
 ):
     """
     將名稱格（單一 cell）拆成左右兩個巢狀欄位：
       左格（固定 num_col_cm cm）：「編號 N」，置中
       右格（其餘寬度）          ：desc_text，靠左（超出欄寬自動截斷加 …）
 
-    outer_width_cm：外層 cell 的實際欄寬（cm），用來計算右格寬度。
-    做法：在 cell 內插入一個 1 列 2 欄的巢狀表格，
-    外層 cell 本身清空，讓巢狀表格填滿。
+    outer_width_cm  ：外層 cell 的實際欄寬（cm）
+    row_height_cm   ：外層名稱列高度（cm），用來設定巢狀列高為 exact，
+                      防止巢狀列撐高外層 EXACTLY 列。
     """
     from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
     from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -369,11 +368,13 @@ def fill_name_cell(
     gridCol2.set(_qn("w:w"), str(desc_twips))
 
     # ── 單一列 ──
+    # 列高設為與外層列高相同，hRule=exact 防止巢狀列撐高外層
+    row_height_twips = max(int(row_height_cm / 2.54 * 1440), 1)
     tr = etree.SubElement(tbl_xml, _qn("w:tr"))
     trPr = etree.SubElement(tr, _qn("w:trPr"))
     trHeight = etree.SubElement(trPr, _qn("w:trHeight"))
-    trHeight.set(_qn("w:val"), "0")
-    trHeight.set(_qn("w:hRule"), "auto")
+    trHeight.set(_qn("w:val"), str(row_height_twips))
+    trHeight.set(_qn("w:hRule"), "exact")
 
     def _make_tc(width_twips, text, align="center", fit_text=False):
         tc_el = etree.SubElement(tr, _qn("w:tc"))
