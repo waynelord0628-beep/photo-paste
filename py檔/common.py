@@ -314,40 +314,42 @@ def fill_name_cell(
     在名稱格中放兩行文字：
       第一行：「編號 N」
       第二行：desc_text（例如「說明：xxx」）
-    字體 12pt 標楷體，列高由外層控制（AT_LEAST 讓兩行文字自然撐開）。
+    字體 12pt 標楷體，列高由外層 AT_LEAST 自然撐開。
     """
-    from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.shared import Pt
+    from docx.oxml.ns import qn as _qn
+    from lxml import etree
 
-    # 清除 cell 原有段落，重新填入兩行
-    for p in cell.paragraphs:
-        p.clear()
+    # ── 完整清除 cell 內所有子節點（含舊巢狀表格），只保留 tcPr ──
+    tc = cell._tc
+    tcPr = tc.find(_qn("w:tcPr"))
+    for child in list(tc):
+        if child.tag != _qn("w:tcPr"):
+            tc.remove(child)
 
-    def _add_line(para, text):
-        para.paragraph_format.space_before = Pt(0)
-        para.paragraph_format.space_after = Pt(0)
-        run = para.add_run(text)
-        run.font.name = "標楷體"
-        run.font.size = Pt(12)
-        # 設定東亞字體（中文）
-        from docx.oxml.ns import qn as _qn
-
-        rPr = run._r.get_or_add_rPr()
-        rFonts = rPr.find(_qn("w:rFonts"))
-        if rFonts is None:
-            from lxml import etree
-
-            rFonts = etree.SubElement(rPr, _qn("w:rFonts"))
-        rFonts.set(_qn("w:eastAsia"), "標楷體")
+    def _make_paragraph(text):
+        """建立一個段落元素，含 12pt 標楷體文字，段前後距為 0"""
+        p_el = etree.SubElement(tc, _qn("w:p"))
+        pPr_el = etree.SubElement(p_el, _qn("w:pPr"))
+        spacing = etree.SubElement(pPr_el, _qn("w:spacing"))
+        spacing.set(_qn("w:before"), "0")
+        spacing.set(_qn("w:after"), "0")
+        r_el = etree.SubElement(p_el, _qn("w:r"))
+        rPr_el = etree.SubElement(r_el, _qn("w:rPr"))
+        rFonts = etree.SubElement(rPr_el, _qn("w:rFonts"))
         rFonts.set(_qn("w:ascii"), "Times New Roman")
+        rFonts.set(_qn("w:eastAsia"), "標楷體")
+        sz = etree.SubElement(rPr_el, _qn("w:sz"))
+        sz.set(_qn("w:val"), "24")  # 12pt = 24 half-points
+        szCs = etree.SubElement(rPr_el, _qn("w:szCs"))
+        szCs.set(_qn("w:val"), "24")
+        t_el = etree.SubElement(r_el, _qn("w:t"))
+        t_el.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+        t_el.text = text
+        return p_el
 
-    # 第一行：編號
-    p1 = cell.paragraphs[0]
-    _add_line(p1, f"編號 {number}")
-
-    # 第二行：說明
-    p2 = cell.add_paragraph()
-    _add_line(p2, desc_text)
+    _make_paragraph(f"編號 {number}")
+    _make_paragraph(desc_text)
 
 
 def set_table_fixed_width(tbl, total_width_cm):
