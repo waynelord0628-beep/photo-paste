@@ -103,7 +103,9 @@ def _run_3col_landscape_filename(
             p_pic.add_run().add_picture(open_image_as_stream(img_path), width=Cm(8))
             p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
             cell_name = tbl.cell(1, i)
-            fill_name_cell(cell_name, group_start + i + 1, f"說明：{img_name}")
+            fill_name_cell(
+                cell_name, group_start + i + 1, f"說明：{img_name}", outer_width_cm=8.47
+            )
         if group_start + GROUP_SIZE < len(image_file_path):
             document.add_section(WD_SECTION.NEW_PAGE)
 
@@ -156,7 +158,9 @@ def _run_3col_landscape_number(
             p_pic.add_run().add_picture(open_image_as_stream(img_path), width=Cm(8))
             p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
             cell_name = tbl.cell(1, i)
-            fill_name_cell(cell_name, group_start + i + 1, "說明：")
+            fill_name_cell(
+                cell_name, group_start + i + 1, "說明：", outer_width_cm=8.47
+            )
         if group_start + GROUP_SIZE < len(image_file_path):
             document.add_section(WD_SECTION.NEW_PAGE)
 
@@ -208,7 +212,7 @@ def _run_2row_portrait_filename(
         p_pic.add_run().add_picture(open_image_as_stream(img_path), width=PIC_WIDTH)
         p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
         cell_name = tbl.cell(i * 2 + 1, 0)
-        fill_name_cell(cell_name, i + 1, f"說明：{img_name}")
+        fill_name_cell(cell_name, i + 1, f"說明：{img_name}", outer_width_cm=19.05)
         row_name = tbl.rows[i * 2 + 1]
         row_name.height = Pt(28.35)
         row_name.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
@@ -264,7 +268,7 @@ def _run_2row_portrait_number(
         p_pic.add_run().add_picture(open_image_as_stream(img_path), width=PIC_WIDTH)
         p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
         cell_name = tbl.cell(i * 2 + 1, 0)
-        fill_name_cell(cell_name, i + 1, "說明：")
+        fill_name_cell(cell_name, i + 1, "說明：", outer_width_cm=19.05)
         row_name = tbl.rows[i * 2 + 1]
         row_name.height = Cm(1)
         row_name.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
@@ -327,7 +331,9 @@ def _run_2col_portrait_filename(
             p_pic.add_run().add_picture(open_image_as_stream(img_path), width=Cm(8))
             p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
             cell_name = tbl.cell(1, i)
-            fill_name_cell(cell_name, group_start + i + 1, f"說明：{img_name}")
+            fill_name_cell(
+                cell_name, group_start + i + 1, "說明：", outer_width_cm=9.525
+            )
         if group_start + GROUP_SIZE < len(image_file_path):
             document.add_section(WD_SECTION.NEW_PAGE)
 
@@ -382,7 +388,9 @@ def _run_2col_portrait_number(
             p_pic.add_run().add_picture(open_image_as_stream(img_path), width=Cm(8))
             p_pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
             cell_name = tbl.cell(1, i)
-            fill_name_cell(cell_name, group_start + i + 1, "說明：")
+            fill_name_cell(
+                cell_name, group_start + i + 1, "說明：", outer_width_cm=9.525
+            )
         if group_start + GROUP_SIZE < len(image_file_path):
             document.add_section(WD_SECTION.NEW_PAGE)
 

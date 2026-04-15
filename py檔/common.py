@@ -259,12 +259,19 @@ def set_cell_width(cell, width_cm):
     tcW.set(_qn("w:type"), "dxa")
 
 
-def fill_name_cell(cell, number: int, desc_text: str, num_col_cm: float = 2.2):
+def fill_name_cell(
+    cell,
+    number: int,
+    desc_text: str,
+    outer_width_cm: float = 9.0,
+    num_col_cm: float = 2.2,
+):
     """
     將名稱格（單一 cell）拆成左右兩個巢狀欄位：
       左格（固定 num_col_cm cm）：「編號 N」，置中
       右格（其餘寬度）          ：desc_text，靠左
 
+    outer_width_cm：外層 cell 的實際欄寬（cm），用來計算右格寬度。
     做法：在 cell 內插入一個 1 列 2 欄的巢狀表格，
     外層 cell 本身清空，讓巢狀表格填滿。
     """
@@ -307,18 +314,9 @@ def fill_name_cell(cell, number: int, desc_text: str, num_col_cm: float = 2.2):
     tblGrid = etree.SubElement(tbl_xml, _qn("w:tblGrid"))
     # 左格寬度（twips）
     num_twips = int(num_col_cm / 2.54 * 1440)
-    # 右格寬度 = 外層 cell 實際寬度 - 左格寬度
-    tcPr_outer = tc.find(_qn("w:tcPr"))
-    desc_twips = 5000  # fallback
-    if tcPr_outer is not None:
-        tcW_outer = tcPr_outer.find(_qn("w:tcW"))
-        if tcW_outer is not None:
-            try:
-                outer_w = int(tcW_outer.get(_qn("w:w"), "0"))
-                if outer_w > num_twips:
-                    desc_twips = outer_w - num_twips
-            except ValueError:
-                pass
+    # 右格寬度 = 外層欄寬 - 左格寬度
+    outer_twips = int(outer_width_cm / 2.54 * 1440)
+    desc_twips = max(outer_twips - num_twips, 500)
     gridCol1 = etree.SubElement(tblGrid, _qn("w:gridCol"))
     gridCol1.set(_qn("w:w"), str(num_twips))
     gridCol2 = etree.SubElement(tblGrid, _qn("w:gridCol"))
