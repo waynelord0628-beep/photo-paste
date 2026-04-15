@@ -14,7 +14,9 @@
 
 ## 輸出範例
 
-![輸出範例](docs/screenshot_template.png)
+<div align="center">
+  <img src="docs/screenshot_template.png" alt="輸出範例" width="600">
+</div>
 
 ---
 
