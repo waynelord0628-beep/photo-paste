@@ -309,119 +309,45 @@ def fill_name_cell(
     desc_text: str,
     outer_width_cm: float = 9.0,
     num_col_cm: float = 2.2,
-    row_height_cm: float = 1.2,
 ):
     """
-    將名稱格（單一 cell）拆成左右兩個巢狀欄位：
-      左格（固定 num_col_cm cm）：「編號 N」，置中
-      右格（其餘寬度）          ：desc_text，靠左（超出欄寬自動截斷加 …）
-
-    outer_width_cm  ：外層 cell 的實際欄寬（cm）
-    row_height_cm   ：外層名稱列高度（cm），用來設定巢狀列高為 exact，
-                      防止巢狀列撐高外層 EXACTLY 列。
+    在名稱格中放兩行文字：
+      第一行：「編號 N」
+      第二行：desc_text（例如「說明：xxx」）
+    字體 12pt 標楷體，列高由外層控制（AT_LEAST 讓兩行文字自然撐開）。
     """
-    from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
     from docx.enum.text import WD_ALIGN_PARAGRAPH
-    from docx.oxml.ns import qn as _qn
-    from lxml import etree
+    from docx.shared import Pt
 
-    # 清除 cell 原有段落內容
-    tc = cell._tc
-    for p in tc.findall(_qn("w:p")):
-        tc.remove(p)
+    # 清除 cell 原有段落，重新填入兩行
+    for p in cell.paragraphs:
+        p.clear()
 
-    # 取得外層 cell 的表格物件，以便用 add_table
-    # python-docx 不支援直接在 cell 內 add_table，改用 XML 直接建
-    # ── 建立巢狀表格 XML ──
-    tbl_xml = etree.SubElement(tc, _qn("w:tbl"))
+    def _add_line(para, text):
+        para.paragraph_format.space_before = Pt(0)
+        para.paragraph_format.space_after = Pt(0)
+        run = para.add_run(text)
+        run.font.name = "標楷體"
+        run.font.size = Pt(12)
+        # 設定東亞字體（中文）
+        from docx.oxml.ns import qn as _qn
 
-    # tblPr
-    tblPr = etree.SubElement(tbl_xml, _qn("w:tblPr"))
-    tblStyle = etree.SubElement(tblPr, _qn("w:tblStyle"))
-    tblStyle.set(_qn("w:val"), "TableGrid")
-    tblW = etree.SubElement(tblPr, _qn("w:tblW"))
-    tblW.set(_qn("w:w"), "0")
-    tblW.set(_qn("w:type"), "auto")
-    tblLayout = etree.SubElement(tblPr, _qn("w:tblLayout"))
-    tblLayout.set(_qn("w:type"), "fixed")
-    # 移除巢狀表格外框，但保留 insideV（左右格之間的中間直格線）
-    tblBorders = etree.SubElement(tblPr, _qn("w:tblBorders"))
-    for side in ("top", "left", "bottom", "right", "insideH"):
-        b = etree.SubElement(tblBorders, _qn(f"w:{side}"))
-        b.set(_qn("w:val"), "none")
-    insideV = etree.SubElement(tblBorders, _qn("w:insideV"))
-    insideV.set(_qn("w:val"), "single")
-    insideV.set(_qn("w:sz"), "4")
-    insideV.set(_qn("w:space"), "0")
-    insideV.set(_qn("w:color"), "000000")
+        rPr = run._r.get_or_add_rPr()
+        rFonts = rPr.find(_qn("w:rFonts"))
+        if rFonts is None:
+            from lxml import etree
 
-    # tblGrid（兩欄）
-    tblGrid = etree.SubElement(tbl_xml, _qn("w:tblGrid"))
-    # 左格寬度（twips）
-    num_twips = int(num_col_cm / 2.54 * 1440)
-    # 右格寬度 = 外層欄寬 - 左格寬度
-    outer_twips = int(outer_width_cm / 2.54 * 1440)
-    desc_twips = max(outer_twips - num_twips, 500)
-    gridCol1 = etree.SubElement(tblGrid, _qn("w:gridCol"))
-    gridCol1.set(_qn("w:w"), str(num_twips))
-    gridCol2 = etree.SubElement(tblGrid, _qn("w:gridCol"))
-    gridCol2.set(_qn("w:w"), str(desc_twips))
-
-    # ── 單一列 ──
-    # 列高設為與外層列高相同，hRule=exact 防止巢狀列撐高外層
-    row_height_twips = max(int(row_height_cm / 2.54 * 1440), 1)
-    tr = etree.SubElement(tbl_xml, _qn("w:tr"))
-    trPr = etree.SubElement(tr, _qn("w:trPr"))
-    trHeight = etree.SubElement(trPr, _qn("w:trHeight"))
-    trHeight.set(_qn("w:val"), str(row_height_twips))
-    trHeight.set(_qn("w:hRule"), "exact")
-
-    def _make_tc(width_twips, text, align="center", fit_text=False):
-        tc_el = etree.SubElement(tr, _qn("w:tc"))
-        tcPr_el = etree.SubElement(tc_el, _qn("w:tcPr"))
-        tcW_el = etree.SubElement(tcPr_el, _qn("w:tcW"))
-        tcW_el.set(_qn("w:w"), str(width_twips))
-        tcW_el.set(_qn("w:type"), "dxa")
-        # 垂直置中
-        vAlign = etree.SubElement(tcPr_el, _qn("w:vAlign"))
-        vAlign.set(_qn("w:val"), "center")
-        # 段落
-        p_el = etree.SubElement(tc_el, _qn("w:p"))
-        pPr_el = etree.SubElement(p_el, _qn("w:pPr"))
-        jc = etree.SubElement(pPr_el, _qn("w:jc"))
-        jc.set(_qn("w:val"), align)
-        # 段落間距
-        spacing = etree.SubElement(pPr_el, _qn("w:spacing"))
-        spacing.set(_qn("w:before"), "0")
-        spacing.set(_qn("w:after"), "0")
-        r_el = etree.SubElement(p_el, _qn("w:r"))
-        rPr_el = etree.SubElement(r_el, _qn("w:rPr"))
-        # 字型 14pt 標楷體
-        rFonts = etree.SubElement(rPr_el, _qn("w:rFonts"))
-        rFonts.set(_qn("w:ascii"), "Times New Roman")
+            rFonts = etree.SubElement(rPr, _qn("w:rFonts"))
         rFonts.set(_qn("w:eastAsia"), "標楷體")
-        sz = etree.SubElement(rPr_el, _qn("w:sz"))
-        sz.set(_qn("w:val"), "28")  # 14pt = 28 half-points
-        szCs = etree.SubElement(rPr_el, _qn("w:szCs"))
-        szCs.set(_qn("w:val"), "28")
-        # 文字自適應：超出欄寬時自動縮小字型
-        if fit_text:
-            fitText = etree.SubElement(rPr_el, _qn("w:fitText"))
-            fitText.set(_qn("w:val"), str(width_twips))
-            fitText.set(_qn("w:id"), "1")
-        t_el = etree.SubElement(r_el, _qn("w:t"))
-        t_el.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
-        t_el.text = text
-        return tc_el
+        rFonts.set(_qn("w:ascii"), "Times New Roman")
 
-    _make_tc(num_twips, f"編號 {number}", align="center", fit_text=True)
-    # 右格：先截斷文字，超出用刪節號，不再用 fitText
-    desc_width_cm = desc_twips / 1440 * 2.54
-    truncated = truncate_text_to_width(desc_text, desc_width_cm, font_size_pt=14)
-    _make_tc(desc_twips, truncated, align="left", fit_text=False)
+    # 第一行：編號
+    p1 = cell.paragraphs[0]
+    _add_line(p1, f"編號 {number}")
 
-    # cell 最後需要一個段落（Word 規範）
-    closing_p = etree.SubElement(tc, _qn("w:p"))
+    # 第二行：說明
+    p2 = cell.add_paragraph()
+    _add_line(p2, desc_text)
 
 
 def set_table_fixed_width(tbl, total_width_cm):
