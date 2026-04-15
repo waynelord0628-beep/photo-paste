@@ -314,9 +314,9 @@ def fill_name_cell(
     在名稱格中放兩行文字：
       第一行：「編號 N」
       第二行：desc_text（例如「說明：xxx」）
-    字體 12pt 標楷體，列高由外層 AT_LEAST 自然撐開。
+    說明行字型從 12pt 自動縮小至最小 8pt，確保不換行。
+    列高由外層 AT_LEAST 自然撐開。
     """
-    from docx.shared import Pt
     from docx.oxml.ns import qn as _qn
     from lxml import etree
 
@@ -327,8 +327,9 @@ def fill_name_cell(
         if child.tag != _qn("w:tcPr"):
             tc.remove(child)
 
-    def _make_paragraph(text):
-        """建立一個段落元素，含 12pt 標楷體文字，段前後距為 0"""
+    def _make_paragraph(text, font_pt=12):
+        """建立一個段落元素，含指定 pt 標楷體文字，段前後距為 0"""
+        half_pts = str(int(font_pt * 2))
         p_el = etree.SubElement(tc, _qn("w:p"))
         pPr_el = etree.SubElement(p_el, _qn("w:pPr"))
         spacing = etree.SubElement(pPr_el, _qn("w:spacing"))
@@ -340,16 +341,33 @@ def fill_name_cell(
         rFonts.set(_qn("w:ascii"), "Times New Roman")
         rFonts.set(_qn("w:eastAsia"), "標楷體")
         sz = etree.SubElement(rPr_el, _qn("w:sz"))
-        sz.set(_qn("w:val"), "24")  # 12pt = 24 half-points
+        sz.set(_qn("w:val"), half_pts)
         szCs = etree.SubElement(rPr_el, _qn("w:szCs"))
-        szCs.set(_qn("w:val"), "24")
+        szCs.set(_qn("w:val"), half_pts)
         t_el = etree.SubElement(r_el, _qn("w:t"))
         t_el.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
         t_el.text = text
         return p_el
 
+    # ── 自動縮小說明行字型，確保說明文字不換行 ──
+    pt_cm = 2.54 / 72
+    usable_cm = outer_width_cm - 0.5  # 扣掉 cell padding / 格線安全邊距
+
+    def _text_width_cm(text, font_pt):
+        full_w = font_pt * pt_cm
+        half_w = full_w * 0.55
+        return sum(full_w if ord(ch) > 0x2E7F else half_w for ch in text)
+
+    desc_pt = 12
+    for candidate_pt in (12, 11, 10, 9, 8):
+        if _text_width_cm(desc_text, candidate_pt) <= usable_cm:
+            desc_pt = candidate_pt
+            break
+    else:
+        desc_pt = 8  # 最小也塞不下就用 8pt（Word 會自動換行，但已盡力）
+
     _make_paragraph(f"編號 {number}")
-    _make_paragraph(desc_text)
+    _make_paragraph(desc_text, font_pt=desc_pt)
 
 
 def set_table_fixed_width(tbl, total_width_cm):
